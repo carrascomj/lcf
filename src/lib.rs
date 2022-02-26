@@ -60,13 +60,17 @@ impl Iterator for FastaIterator {
         let record = self.iter.next();
         if let Some(Ok(rec)) = record {
             let seq = rec.seq();
+            let length = seq.len();
             // ignore sequences that has a lower length
-            if seq.len() < self.slice_size {
-                return self.next();
-            }
-            let between = Uniform::from(0..seq.len() - self.slice_size - 1);
-            let index = between.sample(&mut self.rng);
-            let slice = seq[index..(self.slice_size + index)]
+            let index = match &self.slice_size.cmp(&length) {
+                std::cmp::Ordering::Equal => 0,
+                std::cmp::Ordering::Greater => return self.next(),
+                std::cmp::Ordering::Less => {
+                    let between = Uniform::from(0..length - self.slice_size);
+                    between.sample(&mut self.rng)
+                }
+            };
+            let slice = seq[index..(self.slice_size + index - 1)]
                 .iter()
                 .map(|base| match base {
                     65 => [1, 0, 0, 0], // A
