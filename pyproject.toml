@@ -1,0 +1,48 @@
+[project]
+name = "lcf"
+version = "0.1.0"
+description = "Python Bindings to rust_sbml"
+readme = "README.md"
+requires-python = ">=3.6"
+keywords = ["parser", "fasta", "bioinformatics"]
+authors = [
+  {email = "carrascomurielj@gmail.com"},
+]
+maintainers = [
+  {name = "Jorge Carrasco Muriel", email = "carrascomurielj@gmail.com"}
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python",
+    "Programming Language :: Rust",
+]
+
+[tool.poetry]
+name = "lcf"
+version = "0.1.0"
+description = "Python Bindings to rust_sbml"
+authors = [
+  "Jorge Carrasco Muriel",
+]
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/carrascomj/lcf"
+keywords = ["parser", "sbml", "science", "bioinformatics"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[build-system]
+requires = ["maturin"]
+build-backend = "maturin"
+
+[tool.poetry.dev-dependencies]
+maturin = "==0.9.4"
