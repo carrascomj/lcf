@@ -94,10 +94,95 @@ impl Iterator for FastaIterator {
     }
 }
 
+#[pyclass]
+pub struct ReFastaIterator {
+    iter: fasta::Records<std::io::BufReader<std::fs::File>>,
+    path: Option<String>,
+    rng: SmallRng,
+    slice_size: usize,
+    n_samples: usize,
+}
+
+#[pyproto]
+impl PyIterProtocol for ReFastaIterator {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<Vec<Vec<[u8; 4]>>> {
+        slf.next()
+    }
+}
+
+impl Iterator for ReFastaIterator {
+    type Item = Vec<Vec<[u8; 4]>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let record = self.iter.next();
+        if let Some(Ok(rec)) = record {
+            let seq = rec.seq();
+            let length = seq.len();
+            let between = match &self.slice_size.cmp(&length) {
+                std::cmp::Ordering::Less => Uniform::from(0..length - self.slice_size),
+                _ => return self.next(),
+            };
+            Some(
+                (0..self.n_samples)
+                    .map(|_| {
+                        let index = between.sample(&mut self.rng);
+                        return seq[index..(self.slice_size + index - 1)]
+                            .iter()
+                            .map(|base| match base {
+                                65 => [1, 0, 0, 0], // A
+                                67 => [0, 1, 0, 0], // C
+                                71 => [0, 0, 1, 0], // G
+                                84 => [0, 0, 0, 1], // T
+                                _ => [0, 0, 0, 0],
+                            })
+                            .collect::<Vec<[u8; 4]>>();
+                    })
+                    .collect(),
+            )
+        } else if record.is_some() {
+            self.next()
+        } else if let Some(data_path) = &self.path {
+            // We have reached the end, cycle again
+            let reader = fasta::Reader::from_file(data_path).unwrap();
+            self.iter = reader.records();
+            self.next()
+        } else {
+            None
+        }
+    }
+}
+
+/// Retrieve a random slice of each sequence of size slice_size. Additionally,
+/// the slice is one hot encoded.
+#[pyfunction]
+pub fn get_fasta_reiterator(
+    path: &str,
+    slice_size: usize,
+    cycle: bool,
+    n_samples: usize,
+) -> ReFastaIterator {
+    // TODO: handle this unwrap
+    let reader = fasta::Reader::from_file_with_capacity(1000000000, path).unwrap();
+    let rng = SmallRng::from_entropy();
+    let path = if cycle { Some(path.to_string()) } else { None };
+    ReFastaIterator {
+        iter: reader.records(),
+        path,
+        rng,
+        slice_size,
+        n_samples,
+    }
+}
+
 #[pymodule]
 fn lcf(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<FastaIterator>()?;
+    m.add_class::<ReFastaIterator>()?;
     m.add_function(wrap_pyfunction!(get_fasta_iterator, m)?)?;
+    m.add_function(wrap_pyfunction!(get_fasta_reiterator, m)?)?;
     m.add_function(wrap_pyfunction!(len_fasta_valid, m)?)?;
     Ok(())
 }
