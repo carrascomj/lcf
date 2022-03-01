@@ -12,3 +12,12 @@ def genome_fasta() -> str:
         "data",
         "three_cds.fna",
     )
+
+
+@pytest.fixture
+def genome_index() -> str:
+    return join(
+        dirname(__file__),
+        "data",
+        "three_cds.fna.fai",
+    )
