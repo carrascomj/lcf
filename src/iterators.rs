@@ -4,17 +4,16 @@ use pyo3::PyIterProtocol;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::SmallRng;
 
-
 #[pyclass]
 pub struct FastaIterator {
     pub(crate) iter: fasta::Records<std::io::BufReader<std::fs::File>>,
     pub(crate) path: Option<String>,
-    pub(crate)  rng: SmallRng,
+    pub(crate) rng: SmallRng,
     pub(crate) slice_size: usize,
 }
 
 impl Iterator for FastaIterator {
-    type Item = Vec<[u8; 4]>;
+    type Item = (Vec<[u8; 4]>, String);
 
     fn next(&mut self) -> Option<Self::Item> {
         let record = self.iter.next();
@@ -40,7 +39,7 @@ impl Iterator for FastaIterator {
                     _ => [0, 0, 0, 0],
                 })
                 .collect();
-            Some(slice)
+            Some((slice, rec.desc().unwrap_or_default().to_string()))
         } else if record.is_some() {
             self.next()
         } else if let Some(data_path) = &self.path {
@@ -59,7 +58,7 @@ impl PyIterProtocol for FastaIterator {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
-    fn __next__(mut slf: PyRefMut<Self>) -> Option<Vec<[u8; 4]>> {
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<(Vec<[u8; 4]>, String)> {
         slf.next()
     }
 }
