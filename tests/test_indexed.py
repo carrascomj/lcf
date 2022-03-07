@@ -24,5 +24,15 @@ def test_fasta_cycle_index(genome_fasta: str, genome_index: str):
     assert i == 31
 
 
-def test_fasta_length(genome_fasta: str, genome_index: str):
-    assert get_fasta_indexed(genome_fasta, genome_index, 0, 5, False).records_len() == 3
+def test_fasta_length_is_correct(genome_fasta: str, genome_index: str):
+    n_samples = 5
+    assert (
+        len(get_fasta_indexed(genome_fasta, genome_index, 0, n_samples, False))
+        == 3 * n_samples
+    )
+
+
+def test_accessing_is_great(genome_fasta: str, genome_index: str):
+    n_samples = 5
+    fasta = get_fasta_indexed(genome_fasta, genome_index, 0, n_samples, False)
+    fasta.get_idx(len(fasta) - 1) == fasta.get_idx(3 * n_samples)

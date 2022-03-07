@@ -1,4 +1,6 @@
 use bio::io::fasta;
+use pyo3::class::PyMappingProtocol;
+use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::PyIterProtocol;
 use rand::distributions::{Distribution, Uniform};
@@ -19,6 +21,7 @@ pub struct IndexFastaIterator {
     pub n_samples: usize,
     cycle: bool,
     i: usize,
+    len: Option<usize>,
 }
 
 impl IndexFastaIterator {
@@ -29,14 +32,18 @@ impl IndexFastaIterator {
         n_samples: usize,
         cycle: bool,
     ) -> Self {
-        Self {
+        let mut index_iterator = Self {
             index: fasta::IndexedReader::with_index(fasta, fai),
             rng: SmallRng::from_entropy(),
             slice_size,
             n_samples,
             i: 0,
+            len: None,
             cycle,
-        }
+        };
+        // compute records len just once
+        index_iterator.records_len();
+        index_iterator
     }
 
     /// Advance to next record.
@@ -68,9 +75,63 @@ impl IndexFastaIterator {
 
 #[pymethods]
 impl IndexFastaIterator {
-    /// Number of records. This is an upper bound of the lenght of the iterator.
-    fn records_len(&self) -> usize {
-        self.index.len()
+    /// Number of records that satisfy the sequence size minimum
+    /// self if mutable because the solution is cached internally
+    fn records_len(&mut self) -> usize {
+        if let Some(length) = self.len {
+            length
+        } else {
+            let len = self
+                .index
+                .index
+                .sequences()
+                .iter()
+                .filter(|fasta::Sequence { len: x, .. }| x > &self.slice_size)
+                .count()
+                * self.n_samples;
+            self.len = Some(len);
+            len
+        }
+    }
+
+    /// Get a sequence. Instead of retrieving n_samples, it will retrieve one
+    /// sample but taking into account that the length is [`records_len`] * n_samples
+    fn get_idx(&mut self, i: usize) -> PyResult<Vec<[u8; 4]>> {
+        // usize division is floor division
+        let record_index = i / self.__len__();
+        // save the fetch operation if we are already in that record
+        if (self.i != record_index) & (self.i < self.__len__())
+            || (self.index.read(&mut Vec::new()).is_err())
+        {
+            self.index
+                .fetch_by_rid(record_index, 0, 0)
+                .map_err(|_| PyIndexError::new_err(format!("{} out of bounds", i)))?;
+            self.i = 0;
+        }
+        if let Some(length) = self.index.inner_len() {
+            let between = Uniform::new(0, length - self.slice_size - 1);
+            let idx = between.sample(&mut self.rng);
+            self.get_interval(idx, idx + self.slice_size)
+                .ok_or_else(|| {
+                    PyIndexError::new_err(format!(
+                        "{} record is malformed; indexed length is wrong.",
+                        record_index
+                    ))
+                })
+        } else {
+            Err(PyIndexError::new_err(format!(
+                "{} record is malformed; it has no defined length",
+                record_index
+            )))
+        }
+    }
+}
+
+#[pyproto]
+impl PyMappingProtocol for IndexFastaIterator {
+    /// Actual length of python iterator.
+    fn __len__(&self) -> usize {
+        self.len.unwrap()
     }
 }
 
