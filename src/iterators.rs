@@ -21,7 +21,6 @@ impl Iterator for FastaIterator {
             let seq = rec.seq();
             let length = seq.len();
             // ignore sequences that has a lower length
-            println!("Length {}, slice_size {}", &length, &self.slice_size);
             let index = match &self.slice_size.cmp(&length) {
                 std::cmp::Ordering::Equal => 0,
                 std::cmp::Ordering::Greater => return self.next(),

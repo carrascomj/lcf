@@ -38,7 +38,7 @@ pub fn len_fasta_valid(path: &str, slice_size: usize) -> usize {
     reader
         .records()
         .filter_map(|rrec| match rrec {
-            Ok(rec) if rec.seq().len() > slice_size => Some(1),
+            Ok(rec) if rec.seq().len() >= slice_size => Some(1),
             _ => None,
         })
         .count()
