@@ -12,6 +12,8 @@ use std::io::BufReader;
 #[pyclass]
 /// Iterator from an Indexed Fasta that samples each record `n_samples` times
 /// returning slices of `slice_size`.
+/// Length of the sequence has to be strictly greater than `slice_size`
+/// to avoid unbalancing since `IndexFastaIterator` is used for training.
 pub struct IndexFastaIterator {
     index: fasta::IndexedReader<BufReader<File>>,
     rng: SmallRng,
