@@ -100,10 +100,9 @@ impl IndexFastaIterator {
     /// sample but taking into account that the length is [`records_len`] * n_samples
     fn get_idx(&mut self, i: usize) -> PyResult<Vec<[u8; 4]>> {
         // usize division is floor division
-        let record_index = i / self.__len__();
+        let record_index = i / self.n_samples;
         // save the fetch operation if we are already in that record
         if (self.i != record_index) & (self.i < self.__len__())
-            || (self.index.read(&mut Vec::new()).is_err())
         {
             self.index
                 .fetch_by_rid(record_index, 0, 0)
