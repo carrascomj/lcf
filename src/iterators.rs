@@ -1,8 +1,17 @@
 use bio::io::fasta;
 use pyo3::prelude::*;
-use pyo3::PyIterProtocol;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::SmallRng;
+
+pub(crate) fn one_hot_encode(base: &u8) -> [u8; 4] {
+    match base {
+        65 => [1, 0, 0, 0], // A
+        67 => [0, 1, 0, 0], // C
+        71 => [0, 0, 1, 0], // G
+        84 => [0, 0, 0, 1], // T
+        _ => [0, 0, 0, 0],
+    }
+}
 
 #[pyclass]
 pub struct FastaIterator {
@@ -31,13 +40,7 @@ impl Iterator for FastaIterator {
             };
             let slice = seq[index..(self.slice_size + index - 1)]
                 .iter()
-                .map(|base| match base {
-                    65 => [1, 0, 0, 0], // A
-                    67 => [0, 1, 0, 0], // C
-                    71 => [0, 0, 1, 0], // G
-                    84 => [0, 0, 0, 1], // T
-                    _ => [0, 0, 0, 0],
-                })
+                .map(one_hot_encode)
                 .collect();
             Some((slice, rec.desc().unwrap_or_default().to_string()))
         } else if record.is_some() {
@@ -53,8 +56,8 @@ impl Iterator for FastaIterator {
     }
 }
 
-#[pyproto]
-impl PyIterProtocol for FastaIterator {
+#[pymethods]
+impl FastaIterator {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -72,8 +75,8 @@ pub struct ReFastaIterator {
     pub(crate) n_samples: usize,
 }
 
-#[pyproto]
-impl PyIterProtocol for ReFastaIterator {
+#[pymethods]
+impl ReFastaIterator {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }
@@ -100,13 +103,7 @@ impl Iterator for ReFastaIterator {
                         let index = between.sample(&mut self.rng);
                         return seq[index..(self.slice_size + index - 1)]
                             .iter()
-                            .map(|base| match base {
-                                65 => [1, 0, 0, 0], // A
-                                67 => [0, 1, 0, 0], // C
-                                71 => [0, 0, 1, 0], // G
-                                84 => [0, 0, 0, 1], // T
-                                _ => [0, 0, 0, 0],
-                            })
+                            .map(one_hot_encode)
                             .collect::<Vec<[u8; 4]>>();
                     })
                     .collect(),

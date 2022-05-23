@@ -1,6 +1,6 @@
 [project]
 name = "lcf"
-version = "0.2.1"
+version = "0.3.0"
 description = "Python Bindings to rust_sbml"
 readme = "README.md"
 requires-python = ">=3.6"
@@ -27,7 +27,7 @@ classifiers = [
 
 [tool.poetry]
 name = "lcf"
-version = "0.2.1"
+version = "0.3.0"
 description = "Python Bindings to rust_sbml"
 authors = [
   "Jorge Carrasco Muriel",
@@ -43,6 +43,7 @@ python = "^3.10"
 [build-system]
 requires = ["maturin"]
 build-backend = "maturin"
+maturin = "^0.12.17"
 
 [tool.poetry.dev-dependencies]
-maturin = "==0.9.4"
+maturin = "^0.12.17"

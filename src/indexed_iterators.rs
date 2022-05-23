@@ -1,8 +1,7 @@
+use crate::iterators::one_hot_encode;
 use bio::io::fasta;
-use pyo3::class::PyMappingProtocol;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
-use pyo3::PyIterProtocol;
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -63,13 +62,7 @@ impl IndexFastaIterator {
             self.index
                 .read_iter()
                 .ok()?
-                .map(|base| match base {
-                    Ok(65) => [1, 0, 0, 0], // A
-                    Ok(67) => [0, 1, 0, 0], // C
-                    Ok(71) => [0, 0, 1, 0], // G
-                    Ok(84) => [0, 0, 0, 1], // T
-                    _ => [0, 0, 0, 0],
-                })
+                .map(|base| base.as_ref().map_or([0, 0, 0, 0], one_hot_encode))
                 .collect(),
         )
     }
@@ -126,18 +119,12 @@ impl IndexFastaIterator {
             )))
         }
     }
-}
 
-#[pyproto]
-impl PyMappingProtocol for IndexFastaIterator {
     /// Actual length of python iterator.
     fn __len__(&self) -> usize {
         self.len.unwrap()
     }
-}
 
-#[pyproto]
-impl PyIterProtocol for IndexFastaIterator {
     fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
         slf
     }

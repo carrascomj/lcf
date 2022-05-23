@@ -10,6 +10,9 @@ mod iterators;
 pub use indexed_iterators::IndexFastaIterator;
 pub use iterators::{FastaIterator, ReFastaIterator};
 
+/// (path: str, slice_size: int, cycle: bool)
+/// --
+///
 /// Retrieve a random slice of each sequence of size `slice_size`. Additionally,
 /// the slice is one hot encoded.
 ///
@@ -30,7 +33,10 @@ pub fn get_fasta_iterator(path: &str, slice_size: usize, cycle: bool) -> FastaIt
     }
 }
 
-/// Retrieve lenght of fasta file in term of valid sequences
+/// (path: str, slice_size: int)
+/// --
+///
+/// Retrieve lenght of fasta file in term of valid sequences.
 #[pyfunction]
 pub fn len_fasta_valid(path: &str, slice_size: usize) -> usize {
     // TODO: handle this unwrap
@@ -44,6 +50,10 @@ pub fn len_fasta_valid(path: &str, slice_size: usize) -> usize {
         .count()
 }
 
+
+/// (path: str, slice_size: int, cycle: bool, n_samples: int)
+/// --
+///
 /// Retrieve a random slice of each sequence of size slice_size. Additionally,
 /// the slice is one hot encoded.
 ///
@@ -70,13 +80,14 @@ pub fn get_fasta_reiterator(
     }
 }
 
-#[pyfunction]
-/// Retrieve an interator that takes `n_samples` of size `n_samples for each
-/// record in an indexed FASTA and FASTA.fai files.
+/// (path: str, index_path: str, slice_size: int, n_samples: int, cycle: bool)
+/// --
 ///
+/// Retrieve an interator that takes `n_samples` of size `n_samples` for each
+/// record in an indexed FASTA and FASTA.fai files. 
 /// Only sequences strictly greater than `slice_size` will be iterated to avoid
-/// unbalancing of strictly equal length sequences (which would be repeated
-/// `n_samples` times otherwise).
+/// unbalancing of strictly equal length sequences.
+#[pyfunction]
 pub fn get_fasta_indexed(
     path: &str,
     index_path: &str,
@@ -95,6 +106,7 @@ pub fn get_fasta_indexed(
     )
 }
 
+#[pyfunction]
 #[pymodule]
 fn lcf(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<FastaIterator>()?;
